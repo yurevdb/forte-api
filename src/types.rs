@@ -30,14 +30,6 @@ pub struct Message {
     pub content: String,
 }
 
-/// A message data transfer object
-#[derive(Deserialize)]
-pub struct MessageDTO {
-    pub user_id: u32,
-    pub channel_id: u32,
-    pub content: String,
-}
-
 /// An user
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct User {

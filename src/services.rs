@@ -1,5 +1,6 @@
 use actix_web::{get, HttpResponse, Responder, web, post, delete};
-use crate::{persistence::{get_channels, self}, types::{Channel, User, Message, MessageDTO}};
+use serde::Deserialize;
+use crate::{persistence::{get_channels, self}, types::{Channel, User, Message}};
 
 /// catch-all endpoint
 #[get("/")]
@@ -41,6 +42,14 @@ async fn create_user(user: web::Json<User>) -> impl Responder {
         Ok(_) => HttpResponse::Ok(),
         Err(_) => HttpResponse::BadRequest(),
     }
+}
+
+/// A message data transfer object
+#[derive(Deserialize)]
+struct MessageDTO {
+    pub user_id: u32,
+    pub channel_id: u32,
+    pub content: String,
 }
 
 /// creates the user with the values needed

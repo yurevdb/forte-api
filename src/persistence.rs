@@ -4,24 +4,32 @@ use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool, sqlite::SqliteQueryResu
 use crate::types::{Channel, User, Message};
 
 /// Database url
-const DB_URL: &str = "sqlite://db/data.db";
+const DB_URL: &str = "sqlite:///tmp/forte/data.db";
 
 /// Ensures that the database exists
-pub async fn ensure_exists() {
+pub async fn ensure_exists() -> Result<(), String> {
+
+    if !std::path::Path::new("/tmp/forte").try_exists().unwrap_or(false) {
+        match std::fs::create_dir_all("/tmp/forte") {
+            Ok(_) => println!("Created /tmp/forte"),
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+
     if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
         println!("Creating database {}", DB_URL);
         match Sqlite::create_database(DB_URL).await {
             Ok(_) => println!("Create db success"),
-            Err(error) => panic!("error: {}", error),
+            Err(error) => return Err(error.to_string()),
         }
-    } else {
-        println!("Database already exists");
     }
 
     match create_schema(DB_URL).await {
-        Ok(_) => println!("Schema created"),
-        Err(error) => panic!("error: {}", error),
+        Ok(_) => (),
+        Err(error) => return Err(error.to_string()),
     };
+
+    Ok(())
 }
 
 /// Create the schema of the database
