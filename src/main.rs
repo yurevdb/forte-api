@@ -3,7 +3,7 @@ mod persistence;
 mod types;
 
 // Internal uses
-use services::{index, channels, create_channel};
+use services::{index, channels, create_channel, delete_channel, create_user, create_message};
 use persistence::ensure_exists;
 
 // External uses
@@ -21,6 +21,9 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(channels)
             .service(create_channel)
+            .service(delete_channel)
+            .service(create_user)
+            .service(create_message)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

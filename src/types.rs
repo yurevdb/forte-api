@@ -10,22 +10,10 @@ pub struct Channel {
     pub users: Option<Vec<User>>,
 }
 
-impl Channel {
-    /// Create a new instance of a channel
-    pub fn new(name: &str) -> Self {
-        return Channel {
-            id: None,
-            name: name.to_string(),
-            messages: None,
-            users: None,
-        }
-    }
-}
-
 impl FromRow<'_, SqliteRow> for Channel {
     fn from_row(row: &SqliteRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
-            id: row.try_get("rowid")?,
+            id: row.try_get("id")?,
             name: row.try_get("name")?,
             messages: None,
             users: None,
@@ -38,6 +26,15 @@ impl FromRow<'_, SqliteRow> for Channel {
 pub struct Message {
     pub id: Option<u64>,
     pub user: User,
+    pub channel: Channel,
+    pub content: String,
+}
+
+/// A message data transfer object
+#[derive(Deserialize)]
+pub struct MessageDTO {
+    pub user_id: u32,
+    pub channel_id: u32,
     pub content: String,
 }
 

@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool, sqlite::SqliteQueryResult};
-use crate::types::Channel;
+use crate::types::{Channel, User, Message};
 
 /// Database url
 const DB_URL: &str = "sqlite://db/data.db";
@@ -28,9 +28,27 @@ pub async fn ensure_exists() {
 async fn create_schema(db_url: &str) -> Result<SqliteQueryResult, sqlx::Error> {
     let pool = SqlitePool::connect(db_url).await?;
 
-    let query = "CREATE TABLE IF NOT EXISTS channel 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-                  name VARCHAR(256) NOT NULL);";
+    let query = "
+        CREATE TABLE IF NOT EXISTS channel 
+        (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            name    VARCHAR(256) NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS user 
+        (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            name    VARCHAR(128) NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS message 
+        (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            content     TEXT,
+            user_id     INTEGER NOT NULL,
+            channel_id  INTEGER NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES user(id)
+            FOREIGN KEY(channel_id) REFERENCES channel(id)
+        );
+    ";
 
     let result = sqlx::query(query).execute(&pool).await;
 
@@ -43,7 +61,7 @@ async fn create_schema(db_url: &str) -> Result<SqliteQueryResult, sqlx::Error> {
 pub async fn get_channels() -> Vec<Channel> {
     let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
 
-    let query = "SELECT rowid, name FROM channel";
+    let query = "SELECT * FROM channel";
 
     let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query).fetch_all(&pool).await.unwrap();
 
@@ -54,9 +72,53 @@ pub async fn get_channels() -> Vec<Channel> {
 pub async fn insert_channel(channel: &Channel) -> Result<SqliteQueryResult, sqlx::Error> {
     let pool = SqlitePool::connect(DB_URL).await?;
 
-    let query = format!("INSERT INTO channel (name) VALUES('{}')", channel.name);
+    let query = "INSERT INTO channel (name) VALUES(?)";
 
-    let result = sqlx::query(query.as_str()).execute(&pool).await;
+    let result = sqlx::query(query).bind(channel.name.as_str()).execute(&pool).await;
+
+    pool.close().await;
+
+    return result;
+}
+
+/// Delete the channel with the given id
+pub async fn delete_channel(id: u32) -> Result<SqliteQueryResult, sqlx::Error> {
+    let pool = SqlitePool::connect(DB_URL).await?;
+
+    let query = "DELETE FROM channel WHERE id = ?";
+
+    let result = sqlx::query(query).bind(id).execute(&pool).await;
+
+    pool.close().await;
+
+    return result;
+}
+
+/// Creates a user in the database
+pub async fn create_user(user: &User) -> Result<SqliteQueryResult, sqlx::Error> {
+    let pool = SqlitePool::connect(DB_URL).await?;
+
+    let query = "INSERT INTO user (name) VALUES(?)";
+
+    let result = sqlx::query(query).bind(user.name.as_str()).execute(&pool).await;
+
+    pool.close().await;
+
+    return result;
+}
+
+/// Creates a message in the database
+pub async fn create_message(message: &Message) -> Result<SqliteQueryResult, sqlx::Error> {
+    let pool = SqlitePool::connect(DB_URL).await?;
+
+    let query = "INSERT INTO message (content, channel_id, user_id) VALUES(?, ?, ?)";
+
+    let result = sqlx::query(query)
+        .bind(message.content.as_str())
+        .bind(message.channel.id)
+        .bind(message.user.id)
+        .execute(&pool)
+        .await;
 
     pool.close().await;
 
