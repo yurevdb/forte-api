@@ -1,6 +1,4 @@
 on:
-  push:
-    branches: [master]
   pull_request:
 name: check
 jobs:
@@ -25,22 +23,10 @@ jobs:
 
   clippy:
     runs-on: ubuntu-latest
-    name: ${{ matrix.toolchain }} / clippy
-    strategy:
-      fail-fast: false
-      matrix:
-        toolchain: [stable]
+    name: clippy
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install ${{ matrix.toolchain }}
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.toolchain }}
-          default: true
-          components: clippy
+      - run: rustup components add clippy
       - name: cargo clippy
         uses: actions-rs/clippy-check@v1
         with:
