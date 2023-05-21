@@ -1,4 +1,5 @@
 use actix_web::{get, HttpResponse, Responder, web, post, delete};
+use sqlx::SqlitePool;
 use crate::{persistence::{get_channels, self}, types::{Channel, User, Message}};
 
 /// catch-all endpoint
@@ -9,16 +10,16 @@ async fn index() -> impl Responder {
 
 /// Get the channels
 #[get("/channels")]
-async fn channels() -> impl Responder {
-    let channels = get_channels().await;
+async fn channels(pool: web::Data<SqlitePool>) -> impl Responder {
+    let channels = get_channels(&pool).await;
 
     web::Json(channels)
 }
 
 /// Create a new channel
 #[post("/channels")]
-async fn create_channel(channel: web::Json<Channel>) -> impl Responder {
-    match persistence::insert_channel(&channel).await {
+async fn create_channel(pool: web::Data<SqlitePool>, channel: web::Json<Channel>) -> impl Responder {
+    match persistence::insert_channel(&pool, &channel).await {
         Ok(_) => HttpResponse::Ok(),
         Err(_) => HttpResponse::BadRequest(),
     }
@@ -26,9 +27,9 @@ async fn create_channel(channel: web::Json<Channel>) -> impl Responder {
 
 /// delete the channel with the given id
 #[delete("/channels/{id}")]
-async fn delete_channel(path: web::Path<u32>) -> impl Responder {
+async fn delete_channel(pool: web::Data<SqlitePool>, path: web::Path<u32>) -> impl Responder {
     let channel_id = path.into_inner();
-    match persistence::delete_channel(channel_id).await {
+    match persistence::delete_channel(&pool, channel_id).await {
         Ok(_) => HttpResponse::Ok(),
         Err(_) => HttpResponse::NoContent(),
     }
@@ -36,8 +37,8 @@ async fn delete_channel(path: web::Path<u32>) -> impl Responder {
 
 /// creates the user with the values needed
 #[post("/users")]
-async fn create_user(user: web::Json<User>) -> impl Responder {
-    match persistence::create_user(&user).await {
+async fn create_user(pool: web::Data<SqlitePool>, user: web::Json<User>) -> impl Responder {
+    match persistence::create_user(&pool, &user).await {
         Ok(_) => HttpResponse::Ok(),
         Err(_) => HttpResponse::BadRequest(),
     }
@@ -45,8 +46,8 @@ async fn create_user(user: web::Json<User>) -> impl Responder {
 
 /// creates the user with the values needed
 #[post("/messages")]
-async fn create_message(message: web::Json<Message>) -> impl Responder {
-    match persistence::create_message(&message).await {
+async fn create_message(pool: web::Data<SqlitePool>, message: web::Json<Message>) -> impl Responder {
+    match persistence::create_message(&pool, &message).await {
         Ok(_) => HttpResponse::Ok(),
         Err(error) => {
             println!("{error}");
@@ -57,19 +58,19 @@ async fn create_message(message: web::Json<Message>) -> impl Responder {
 
 /// get messages from a channel
 #[get("/channels/{id}/messages")]
-async fn get_channel_messages(path: web::Path<u32>) -> impl Responder {
+async fn get_channel_messages(pool: web::Data<SqlitePool>, path: web::Path<u32>) -> impl Responder {
     let channel_id = path.into_inner();
 
-    let messages = persistence::get_channel_messages(channel_id).await;
+    let messages = persistence::get_channel_messages(&pool, channel_id).await;
 
     web::Json(messages)
 }
 
 #[get("/users/{id}")]
-async fn get_user_info(path: web::Path<u32>) -> impl Responder {
+async fn get_user_info(pool: web::Data<SqlitePool>, path: web::Path<u32>) -> impl Responder {
     let user_id = path.into_inner();
 
-    let user_info = persistence::get_user_info(user_id).await;
+    let user_info = persistence::get_user_info(&pool, user_id).await;
 
     web::Json(user_info)
 }

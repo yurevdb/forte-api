@@ -9,7 +9,11 @@ use services::{index, channels, create_channel, delete_channel, create_user, cre
 use persistence::ensure_exists;
 
 // External uses
-use actix_web::{App, HttpServer,};
+use actix_web::{App, HttpServer, web};
+use sqlx::SqlitePool;
+
+/// Database url
+const DB_URL: &str = "sqlite:///tmp/forte/data.db";
 
 /// Main function
 #[actix_web::main]
@@ -20,24 +24,27 @@ async fn main() {
 
     println!("Starting server on {ip}:{port}");
 
+    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
+
     // Ensure the database exists and is created
-    ensure_exists().await.unwrap_or_else(|e| {
+    ensure_exists(&pool, DB_URL).await.unwrap_or_else(|e| {
         println!("{e}");
         std::process::exit(1);
     });
 
-    start_server((ip, port)).await.unwrap_or_else(|e| {
+    start_server((ip, port), pool).await.unwrap_or_else(|e| {
         println!("{e}");
         std::process::exit(1);
     });
 }
 
 /// Start the webserver
-async fn start_server<A>(loc: A) -> std::io::Result<()> 
+async fn start_server<A>(loc: A, pool: SqlitePool) -> std::io::Result<()> 
     where A: net::ToSocketAddrs {
     // Start the webserver
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .service(index)
             .service(channels)
             .service(create_channel)

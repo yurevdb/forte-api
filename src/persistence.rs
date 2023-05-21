@@ -3,11 +3,8 @@
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool, sqlite::SqliteQueryResult};
 use crate::types::{Channel, User, Message};
 
-/// Database url
-const DB_URL: &str = "sqlite:///tmp/forte/data.db";
-
 /// Ensures that the database exists
-pub async fn ensure_exists() -> Result<(), String> {
+pub async fn ensure_exists(pool: &SqlitePool, db_url: &str) -> Result<(), String> {
 
     if !std::path::Path::new("/tmp/forte").try_exists().unwrap_or(false) {
         match std::fs::create_dir_all("/tmp/forte") {
@@ -16,15 +13,15 @@ pub async fn ensure_exists() -> Result<(), String> {
         }
     }
 
-    if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
-        println!("Creating database {}", DB_URL);
-        match Sqlite::create_database(DB_URL).await {
+    if !Sqlite::database_exists(db_url).await.unwrap_or(false) {
+        println!("Creating database {}", db_url);
+        match Sqlite::create_database(db_url).await {
             Ok(_) => println!("Create db success"),
             Err(error) => return Err(error.to_string()),
         }
     }
 
-    match create_schema(DB_URL).await {
+    match create_schema(pool).await {
         Ok(_) => (),
         Err(error) => return Err(error.to_string()),
     };
@@ -33,9 +30,7 @@ pub async fn ensure_exists() -> Result<(), String> {
 }
 
 /// Create the schema of the database
-async fn create_schema(db_url: &str) -> Result<SqliteQueryResult, sqlx::Error> {
-    let pool = SqlitePool::connect(db_url).await?;
-
+async fn create_schema(pool: &SqlitePool) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "
         CREATE TABLE IF NOT EXISTS channel 
         (
@@ -58,105 +53,74 @@ async fn create_schema(db_url: &str) -> Result<SqliteQueryResult, sqlx::Error> {
         );
     ";
 
-    let result = sqlx::query(query).execute(&pool).await;
-
-    pool.close().await;
-
+    let result = sqlx::query(query).execute(pool).await;
     return result;
 }
 
 /// Get all the channels
-pub async fn get_channels() -> Vec<Channel> {
-    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
-
+pub async fn get_channels(pool: &SqlitePool) -> Vec<Channel> {
     let query = "SELECT * FROM channel";
 
-    let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query).fetch_all(&pool).await.unwrap();
-
-    pool.close().await;
+    let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query).fetch_all(pool).await.unwrap();
 
     return channel_results;
 }
 
 /// Save the given channel
-pub async fn insert_channel(channel: &Channel) -> Result<SqliteQueryResult, sqlx::Error> {
-    let pool = SqlitePool::connect(DB_URL).await?;
-
+pub async fn insert_channel(pool: &SqlitePool, channel: &Channel) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO channel (name) VALUES(?)";
 
-    let result = sqlx::query(query).bind(channel.name.as_str()).execute(&pool).await;
-
-    pool.close().await;
+    let result = sqlx::query(query).bind(channel.name.as_str()).execute(pool).await;
 
     return result;
 }
 
 /// Delete the channel with the given id
-pub async fn delete_channel(id: u32) -> Result<SqliteQueryResult, sqlx::Error> {
-    let pool = SqlitePool::connect(DB_URL).await?;
-
+pub async fn delete_channel(pool: &SqlitePool, id: u32) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "DELETE FROM channel WHERE id = ?";
 
-    let result = sqlx::query(query).bind(id).execute(&pool).await;
-
-    pool.close().await;
+    let result = sqlx::query(query).bind(id).execute(pool).await;
 
     return result;
 }
 
 /// Creates a user in the database
-pub async fn create_user(user: &User) -> Result<SqliteQueryResult, sqlx::Error> {
-    let pool = SqlitePool::connect(DB_URL).await?;
-
+pub async fn create_user(pool: &SqlitePool, user: &User) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO user (name) VALUES(?)";
 
-    let result = sqlx::query(query).bind(user.name.as_str()).execute(&pool).await;
-
-    pool.close().await;
+    let result = sqlx::query(query).bind(user.name.as_str()).execute(pool).await;
 
     return result;
 }
 
 /// Creates a message in the database
-pub async fn create_message(message: &Message) -> Result<SqliteQueryResult, sqlx::Error> {
-    let pool = SqlitePool::connect(DB_URL).await?;
-
+pub async fn create_message(pool: &SqlitePool, message: &Message) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO message (content, channel_id, user_id) VALUES(?, ?, ?)";
 
     let result = sqlx::query(query)
         .bind(message.content.as_str())
         .bind(message.channel_id)
         .bind(message.user_id)
-        .execute(&pool)
+        .execute(pool)
         .await;
-
-    pool.close().await;
 
     return result;
 }
 
 /// Get messages from a channel
-pub async fn get_channel_messages(id: u32) -> Vec<Message> {
-    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
-
+pub async fn get_channel_messages(pool: &SqlitePool, id: u32) -> Vec<Message> {
     let query = "SELECT * FROM message WHERE channel_id = ?";
 
-    let messages: Vec<Message> = sqlx::query_as::<_, Message>(query).bind(id).fetch_all(&pool).await.unwrap();
-
-    pool.close().await;
+    let messages: Vec<Message> = sqlx::query_as::<_, Message>(query).bind(id).fetch_all(pool).await.unwrap();
 
     return messages;
 }
 
 /// Get info for the user with the given id
-pub async fn get_user_info(id: u32) -> User {
-    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
-
+pub async fn get_user_info(pool: &SqlitePool, id: u32) -> User {
     let query = "SELECT * FROM user WHERE id = ?";
 
-    let user_info: User = sqlx::query_as::<_, User>(query).bind(id).fetch_one(&pool).await.unwrap();
-
-    pool.close().await;
+    let user_info: User = sqlx::query_as::<_, User>(query).bind(id).fetch_one(pool).await.unwrap();
 
     return user_info;
 }
