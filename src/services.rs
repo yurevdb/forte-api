@@ -1,6 +1,9 @@
-use actix_web::{get, HttpResponse, Responder, web, post, delete};
+use crate::{
+    persistence::{self, get_channels},
+    types::{Channel, Message, User},
+};
+use actix_web::{delete, get, post, web, HttpResponse, Responder};
 use sqlx::SqlitePool;
-use crate::{persistence::{get_channels, self}, types::{Channel, User, Message}};
 
 /// catch-all endpoint
 #[get("/")]
@@ -18,7 +21,10 @@ async fn channels(pool: web::Data<SqlitePool>) -> impl Responder {
 
 /// Create a new channel
 #[post("/channels")]
-async fn create_channel(pool: web::Data<SqlitePool>, channel: web::Json<Channel>) -> impl Responder {
+async fn create_channel(
+    pool: web::Data<SqlitePool>,
+    channel: web::Json<Channel>,
+) -> impl Responder {
     match persistence::insert_channel(&pool, &channel).await {
         Ok(result) => HttpResponse::Created().json(result.last_insert_rowid()),
         Err(error) => HttpResponse::BadRequest().json(error.to_string()),
@@ -39,16 +45,17 @@ async fn delete_channel(pool: web::Data<SqlitePool>, path: web::Path<u32>) -> im
 #[post("/users")]
 async fn create_user(pool: web::Data<SqlitePool>, user: web::Json<User>) -> impl Responder {
     match persistence::create_user(&pool, &user).await {
-        Ok(result) => {
-            HttpResponse::Created().json(result.last_insert_rowid())
-        },
+        Ok(result) => HttpResponse::Created().json(result.last_insert_rowid()),
         Err(error) => HttpResponse::BadRequest().json(error.to_string()),
     }
 }
 
 /// creates the user with the values needed
 #[post("/messages")]
-async fn create_message(pool: web::Data<SqlitePool>, message: web::Json<Message>) -> impl Responder {
+async fn create_message(
+    pool: web::Data<SqlitePool>,
+    message: web::Json<Message>,
+) -> impl Responder {
     match persistence::create_message(&pool, &message).await {
         Ok(result) => HttpResponse::Created().json(result.last_insert_rowid()),
         Err(error) => HttpResponse::BadRequest().json(error.to_string()),
