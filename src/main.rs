@@ -5,7 +5,7 @@ mod types;
 use std::net;
 
 // Internal uses
-use services::{index, channels, create_channel, delete_channel, create_user, create_message, get_channel_messages, get_user_info};
+use services::{index, channels, create_channel, create_user, create_message, get_channel_messages, get_user_info};
 use persistence::ensure_exists;
 
 // External uses

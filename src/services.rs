@@ -20,8 +20,8 @@ async fn channels(pool: web::Data<SqlitePool>) -> impl Responder {
 #[post("/channels")]
 async fn create_channel(pool: web::Data<SqlitePool>, channel: web::Json<Channel>) -> impl Responder {
     match persistence::insert_channel(&pool, &channel).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::BadRequest(),
+        Ok(result) => HttpResponse::Created().json(result.last_insert_rowid()),
+        Err(error) => HttpResponse::BadRequest().json(error.to_string()),
     }
 }
 
@@ -39,8 +39,10 @@ async fn delete_channel(pool: web::Data<SqlitePool>, path: web::Path<u32>) -> im
 #[post("/users")]
 async fn create_user(pool: web::Data<SqlitePool>, user: web::Json<User>) -> impl Responder {
     match persistence::create_user(&pool, &user).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::BadRequest(),
+        Ok(result) => {
+            HttpResponse::Created().json(result.last_insert_rowid())
+        },
+        Err(error) => HttpResponse::BadRequest().json(error.to_string()),
     }
 }
 
@@ -48,11 +50,8 @@ async fn create_user(pool: web::Data<SqlitePool>, user: web::Json<User>) -> impl
 #[post("/messages")]
 async fn create_message(pool: web::Data<SqlitePool>, message: web::Json<Message>) -> impl Responder {
     match persistence::create_message(&pool, &message).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(error) => {
-            println!("{error}");
-            HttpResponse::BadRequest()
-        },
+        Ok(result) => HttpResponse::Created().json(result.last_insert_rowid()),
+        Err(error) => HttpResponse::BadRequest().json(error.to_string()),
     }
 }
 
