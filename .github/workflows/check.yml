@@ -26,7 +26,6 @@ jobs:
     name: clippy
     steps:
       - uses: actions/checkout@v3
-      - run: rustup components add clippy
       - name: cargo clippy
         uses: actions-rs/clippy-check@v1
         with:
