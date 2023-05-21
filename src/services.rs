@@ -1,5 +1,4 @@
 use actix_web::{get, HttpResponse, Responder, web, post, delete};
-use serde::Deserialize;
 use crate::{persistence::{get_channels, self}, types::{Channel, User, Message}};
 
 /// catch-all endpoint
@@ -44,36 +43,33 @@ async fn create_user(user: web::Json<User>) -> impl Responder {
     }
 }
 
-/// A message data transfer object
-#[derive(Deserialize)]
-struct MessageDTO {
-    pub user_id: u32,
-    pub channel_id: u32,
-    pub content: String,
-}
-
 /// creates the user with the values needed
 #[post("/messages")]
-async fn create_message(message: web::Json<MessageDTO>) -> impl Responder {
-    let msg = Message{
-        id: None,
-        channel: Channel {
-            id: Some(message.channel_id),
-            name: "".to_string(),
-            users: None,
-            messages: None
-        },
-        user: User {
-            id: Some(message.user_id),
-            name: "".to_string()
-        },
-        content: message.content.to_string()
-    };
-    match persistence::create_message(&msg).await {
+async fn create_message(message: web::Json<Message>) -> impl Responder {
+    match persistence::create_message(&message).await {
         Ok(_) => HttpResponse::Ok(),
         Err(error) => {
             println!("{error}");
             HttpResponse::BadRequest()
         },
     }
+}
+
+/// get messages from a channel
+#[get("/channels/{id}/messages")]
+async fn get_channel_messages(path: web::Path<u32>) -> impl Responder {
+    let channel_id = path.into_inner();
+
+    let messages = persistence::get_channel_messages(channel_id).await;
+
+    web::Json(messages)
+}
+
+#[get("/users/{id}")]
+async fn get_user_info(path: web::Path<u32>) -> impl Responder {
+    let user_id = path.into_inner();
+
+    let user_info = persistence::get_user_info(user_id).await;
+
+    web::Json(user_info)
 }

@@ -24,9 +24,9 @@ impl FromRow<'_, SqliteRow> for Channel {
 /// A message
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct Message {
-    pub id: Option<u64>,
-    pub user: User,
-    pub channel: Channel,
+    pub id: Option<u32>,
+    pub user_id: u32,
+    pub channel_id: u32,
     pub content: String,
 }
 

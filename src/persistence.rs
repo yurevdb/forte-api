@@ -73,6 +73,8 @@ pub async fn get_channels() -> Vec<Channel> {
 
     let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query).fetch_all(&pool).await.unwrap();
 
+    pool.close().await;
+
     return channel_results;
 }
 
@@ -123,12 +125,38 @@ pub async fn create_message(message: &Message) -> Result<SqliteQueryResult, sqlx
 
     let result = sqlx::query(query)
         .bind(message.content.as_str())
-        .bind(message.channel.id)
-        .bind(message.user.id)
+        .bind(message.channel_id)
+        .bind(message.user_id)
         .execute(&pool)
         .await;
 
     pool.close().await;
 
     return result;
+}
+
+/// Get messages from a channel
+pub async fn get_channel_messages(id: u32) -> Vec<Message> {
+    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
+
+    let query = "SELECT * FROM message WHERE channel_id = ?";
+
+    let messages: Vec<Message> = sqlx::query_as::<_, Message>(query).bind(id).fetch_all(&pool).await.unwrap();
+
+    pool.close().await;
+
+    return messages;
+}
+
+/// Get info for the user with the given id
+pub async fn get_user_info(id: u32) -> User {
+    let pool = SqlitePool::connect(DB_URL).await.expect("Connection could not be established.");
+
+    let query = "SELECT * FROM user WHERE id = ?";
+
+    let user_info: User = sqlx::query_as::<_, User>(query).bind(id).fetch_one(&pool).await.unwrap();
+
+    pool.close().await;
+
+    return user_info;
 }
