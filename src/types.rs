@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
-use sqlx::{FromRow, sqlite::SqliteRow, Row};
+use serde::{Deserialize, Serialize};
+use sqlx::{sqlite::SqliteRow, FromRow, Row};
 
 /// A message channel
 #[derive(Serialize, Deserialize)]
@@ -34,5 +34,5 @@ pub struct Message {
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: Option<u32>,
-    pub name: String
+    pub name: String,
 }

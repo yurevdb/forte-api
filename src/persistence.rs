@@ -1,12 +1,14 @@
 #![allow(dead_code)]
 
-use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool, sqlite::SqliteQueryResult};
-use crate::types::{Channel, User, Message};
+use crate::types::{Channel, Message, User};
+use sqlx::{migrate::MigrateDatabase, sqlite::SqliteQueryResult, Sqlite, SqlitePool};
 
 /// Ensures that the database exists
 pub async fn ensure_exists(pool: &SqlitePool, db_url: &str) -> Result<(), String> {
-
-    if !std::path::Path::new("/tmp/forte").try_exists().unwrap_or(false) {
+    if !std::path::Path::new("/tmp/forte")
+        .try_exists()
+        .unwrap_or(false)
+    {
         match std::fs::create_dir_all("/tmp/forte") {
             Ok(_) => println!("Created /tmp/forte"),
             Err(error) => return Err(error.to_string()),
@@ -54,6 +56,7 @@ async fn create_schema(pool: &SqlitePool) -> Result<SqliteQueryResult, sqlx::Err
     ";
 
     let result = sqlx::query(query).execute(pool).await;
+
     return result;
 }
 
@@ -61,16 +64,25 @@ async fn create_schema(pool: &SqlitePool) -> Result<SqliteQueryResult, sqlx::Err
 pub async fn get_channels(pool: &SqlitePool) -> Vec<Channel> {
     let query = "SELECT * FROM channel";
 
-    let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query).fetch_all(pool).await.unwrap();
+    let channel_results: Vec<Channel> = sqlx::query_as::<_, Channel>(query)
+        .fetch_all(pool)
+        .await
+        .unwrap();
 
     return channel_results;
 }
 
 /// Save the given channel
-pub async fn insert_channel(pool: &SqlitePool, channel: &Channel) -> Result<SqliteQueryResult, sqlx::Error> {
+pub async fn insert_channel(
+    pool: &SqlitePool,
+    channel: &Channel,
+) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO channel (name) VALUES(?)";
 
-    let result = sqlx::query(query).bind(channel.name.as_str()).execute(pool).await;
+    let result = sqlx::query(query)
+        .bind(channel.name.as_str())
+        .execute(pool)
+        .await;
 
     return result;
 }
@@ -88,13 +100,19 @@ pub async fn delete_channel(pool: &SqlitePool, id: u32) -> Result<SqliteQueryRes
 pub async fn create_user(pool: &SqlitePool, user: &User) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO user (name) VALUES(?)";
 
-    let result = sqlx::query(query).bind(user.name.as_str()).execute(pool).await;
+    let result = sqlx::query(query)
+        .bind(user.name.as_str())
+        .execute(pool)
+        .await;
 
     return result;
 }
 
 /// Creates a message in the database
-pub async fn create_message(pool: &SqlitePool, message: &Message) -> Result<SqliteQueryResult, sqlx::Error> {
+pub async fn create_message(
+    pool: &SqlitePool,
+    message: &Message,
+) -> Result<SqliteQueryResult, sqlx::Error> {
     let query = "INSERT INTO message (content, channel_id, user_id) VALUES(?, ?, ?)";
 
     let result = sqlx::query(query)
@@ -111,7 +129,11 @@ pub async fn create_message(pool: &SqlitePool, message: &Message) -> Result<Sqli
 pub async fn get_channel_messages(pool: &SqlitePool, id: u32) -> Vec<Message> {
     let query = "SELECT * FROM message WHERE channel_id = ?";
 
-    let messages: Vec<Message> = sqlx::query_as::<_, Message>(query).bind(id).fetch_all(pool).await.unwrap();
+    let messages: Vec<Message> = sqlx::query_as::<_, Message>(query)
+        .bind(id)
+        .fetch_all(pool)
+        .await
+        .unwrap();
 
     return messages;
 }
@@ -120,7 +142,11 @@ pub async fn get_channel_messages(pool: &SqlitePool, id: u32) -> Vec<Message> {
 pub async fn get_user_info(pool: &SqlitePool, id: u32) -> User {
     let query = "SELECT * FROM user WHERE id = ?";
 
-    let user_info: User = sqlx::query_as::<_, User>(query).bind(id).fetch_one(pool).await.unwrap();
+    let user_info: User = sqlx::query_as::<_, User>(query)
+        .bind(id)
+        .fetch_one(pool)
+        .await
+        .unwrap();
 
     return user_info;
 }
