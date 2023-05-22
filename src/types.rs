@@ -30,7 +30,7 @@ pub struct Message {
     pub content: String,
 }
 
-/// An user
+/// A user
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct User {
     pub id: Option<u32>,
