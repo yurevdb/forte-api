@@ -15,23 +15,16 @@ use services::{
 use actix_web::{web, App, HttpServer};
 use sqlx::SqlitePool;
 
-/// Database url
-const DB_URL: &str = "sqlite:///tmp/forte/data.db";
-
 /// Main function
 #[actix_web::main]
 async fn main() {
-    let ip = net::Ipv4Addr::new(127, 0, 0, 1);
+    let ip = net::Ipv4Addr::new(0, 0, 0, 0);
     let port = 8080;
 
     println!("Starting server on {ip}:{port}");
 
-    let pool = SqlitePool::connect(DB_URL)
-        .await
-        .expect("Connection could not be established.");
-
     // Ensure the database exists and is created
-    ensure_exists(&pool, DB_URL).await.unwrap_or_else(|e| {
+    let pool = ensure_exists().await.unwrap_or_else(|e| {
         println!("{e}");
         std::process::exit(1);
     });

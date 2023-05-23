@@ -3,8 +3,11 @@
 use crate::types::{Channel, Message, User};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqliteQueryResult, Sqlite, SqlitePool};
 
+/// Database url
+const DB_URL: &str = "sqlite:///tmp/forte/data.db";
+
 /// Ensures that the database exists
-pub async fn ensure_exists(pool: &SqlitePool, db_url: &str) -> Result<(), String> {
+pub async fn ensure_exists() -> Result<SqlitePool, String> {
     if !std::path::Path::new("/tmp/forte")
         .try_exists()
         .unwrap_or(false)
@@ -15,20 +18,24 @@ pub async fn ensure_exists(pool: &SqlitePool, db_url: &str) -> Result<(), String
         }
     }
 
-    if !Sqlite::database_exists(db_url).await.unwrap_or(false) {
-        println!("Creating database {}", db_url);
-        match Sqlite::create_database(db_url).await {
+    if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
+        println!("Creating database {}", DB_URL);
+        match Sqlite::create_database(DB_URL).await {
             Ok(_) => println!("Create db success"),
             Err(error) => return Err(error.to_string()),
         }
     }
 
-    match create_schema(pool).await {
+    let pool = SqlitePool::connect(DB_URL)
+        .await
+        .expect("Connection could not be established.");
+
+    match create_schema(&pool).await {
         Ok(_) => (),
         Err(error) => return Err(error.to_string()),
     };
 
-    Ok(())
+    Ok(pool)
 }
 
 /// Create the schema of the database
