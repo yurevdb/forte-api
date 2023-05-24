@@ -19,7 +19,7 @@ use sqlx::SqlitePool;
 #[actix_web::main]
 async fn main() {
     let ip = net::Ipv4Addr::new(0, 0, 0, 0);
-    let port = 8080;
+    let port = 80;
 
     println!("Starting server on {ip}:{port}");
 

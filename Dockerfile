@@ -18,6 +18,6 @@ FROM debian:bullseye-slim
 
 COPY --from=build /forte/target/release/forte .
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["./forte"]
