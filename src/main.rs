@@ -13,30 +13,26 @@ use services::{
 
 // External uses
 use actix_web::{web, App, HttpServer};
-use sqlx::SqlitePool;
+use eyre::Result;
+use sqlx::PgPool;
 
 /// Main function
 #[actix_web::main]
-async fn main() {
+async fn main() -> Result<()> {
     let ip = net::Ipv4Addr::new(0, 0, 0, 0);
     let port = 80;
 
     println!("Starting server on {ip}:{port}");
 
-    // Ensure the database exists and is created
-    let pool = ensure_exists().await.unwrap_or_else(|e| {
-        println!("{e}");
-        std::process::exit(1);
-    });
+    let pool = ensure_exists().await?;
 
-    start_server((ip, port), pool).await.unwrap_or_else(|e| {
-        println!("{e}");
-        std::process::exit(1);
-    });
+    start_server((ip, port), pool).await?;
+
+    Ok(())
 }
 
 /// Start the webserver
-async fn start_server<A>(loc: A, pool: SqlitePool) -> std::io::Result<()>
+async fn start_server<A>(loc: A, pool: PgPool) -> Result<()>
 where
     A: net::ToSocketAddrs,
 {
@@ -54,5 +50,7 @@ where
     })
     .bind(loc)?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
