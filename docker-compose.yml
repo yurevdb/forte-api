@@ -1,0 +1,21 @@
+version: '3'
+services:
+  api:
+    container_name: forte-api
+    build: .
+    depends_on:
+      - db.api
+    ports:
+      - "80:80"
+  db.api:
+    container_name: db-api
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: forte
+    volumes:
+      - ./data/pgdata/forte:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  

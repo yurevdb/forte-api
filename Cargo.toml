@@ -11,6 +11,7 @@ authors = ["Yuré Vanderbruggen"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "sqlite", "macros" ] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres" ] }
 actix-web = "4"
 serde = { version = "1", features = ["derive"] }
+eyre = "0.6.8"

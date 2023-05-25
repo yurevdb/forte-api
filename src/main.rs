@@ -13,37 +13,26 @@ use services::{
 
 // External uses
 use actix_web::{web, App, HttpServer};
-use sqlx::SqlitePool;
-
-/// Database url
-const DB_URL: &str = "sqlite:///tmp/forte/data.db";
+use eyre::Result;
+use sqlx::PgPool;
 
 /// Main function
 #[actix_web::main]
-async fn main() {
-    let ip = net::Ipv4Addr::new(127, 0, 0, 1);
-    let port = 8080;
+async fn main() -> Result<()> {
+    let ip = net::Ipv4Addr::new(0, 0, 0, 0);
+    let port = 80;
 
     println!("Starting server on {ip}:{port}");
 
-    let pool = SqlitePool::connect(DB_URL)
-        .await
-        .expect("Connection could not be established.");
+    let pool = ensure_exists().await?;
 
-    // Ensure the database exists and is created
-    ensure_exists(&pool, DB_URL).await.unwrap_or_else(|e| {
-        println!("{e}");
-        std::process::exit(1);
-    });
+    start_server((ip, port), pool).await?;
 
-    start_server((ip, port), pool).await.unwrap_or_else(|e| {
-        println!("{e}");
-        std::process::exit(1);
-    });
+    Ok(())
 }
 
 /// Start the webserver
-async fn start_server<A>(loc: A, pool: SqlitePool) -> std::io::Result<()>
+async fn start_server<A>(loc: A, pool: PgPool) -> Result<()>
 where
     A: net::ToSocketAddrs,
 {
@@ -61,5 +50,7 @@ where
     })
     .bind(loc)?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
