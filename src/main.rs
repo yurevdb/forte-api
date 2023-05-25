@@ -2,8 +2,6 @@ mod persistence;
 mod services;
 mod types;
 
-use std::net;
-
 // Internal uses
 use persistence::ensure_exists;
 use services::{
@@ -15,6 +13,7 @@ use services::{
 use actix_web::{web, App, HttpServer};
 use eyre::Result;
 use sqlx::PgPool;
+use std::net;
 
 /// Main function
 #[actix_web::main]

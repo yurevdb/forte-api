@@ -4,19 +4,18 @@ use sqlx::migrate::MigrateDatabase;
 use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult};
 use sqlx::Postgres;
 
-/// Database url
-const DB_PG: &str = "postgresql://postgres:postgres@db.api/forte";
+const DB_URL: &str = "postgresql://postgres:postgres@db.api/forte";
 
 /// Ensures that the database exists
 pub async fn ensure_exists() -> Result<PgPool> {
-    if !Postgres::database_exists(DB_PG).await.unwrap_or(false) {
-        println!("Creating database {}", DB_PG);
-        Postgres::create_database(DB_PG).await?
+    if !Postgres::database_exists(DB_URL).await.unwrap_or(false) {
+        println!("Creating database {DB_URL}");
+        Postgres::create_database(DB_URL).await?
     }
 
     let pool = PgPoolOptions::new()
         .max_connections(100)
-        .connect(DB_PG)
+        .connect(DB_URL)
         .await?;
 
     create_schema(&pool).await?;
