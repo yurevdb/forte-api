@@ -76,15 +76,20 @@ pub async fn delete_channel(pool: &PgPool, id: i32) -> Result<PgQueryResult> {
 }
 
 /// Creates a user in the database
-pub async fn create_user(pool: &PgPool, user: &User) -> Result<PgQueryResult> {
+pub async fn create_user(pool: &PgPool, user: &User) -> Result<User> {
     let query = "INSERT INTO users (name) VALUES($1)";
 
-    let result = sqlx::query(query)
+    sqlx::query(query)
         .bind(user.name.as_str())
         .execute(pool)
         .await?;
 
-    Ok(result)
+    let new_user = sqlx::query_as::<_, User>("select * from users where name = $1")
+        .bind(user.name.as_str())
+        .fetch_one(pool)
+        .await?;
+
+    Ok(new_user)
 }
 
 /// Creates a message in the database

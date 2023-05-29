@@ -1,3 +1,4 @@
+mod authentication;
 mod persistence;
 mod services;
 mod types;
@@ -6,7 +7,7 @@ mod types;
 use persistence::ensure_exists;
 use services::{
     channels, create_channel, create_message, create_user, get_channel_messages, get_user_info,
-    index,
+    health_check, index, user_login,
 };
 
 // External uses
@@ -40,12 +41,14 @@ where
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .service(index)
+            .service(health_check)
             .service(channels)
             .service(create_channel)
             .service(create_user)
             .service(create_message)
             .service(get_channel_messages)
             .service(get_user_info)
+            .service(user_login)
     })
     .bind(loc)?
     .run()

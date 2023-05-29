@@ -1,7 +1,6 @@
 version: '3'
 services:
   forte:
-    container_name: forte-api
     build: .
     depends_on:
       - db.api

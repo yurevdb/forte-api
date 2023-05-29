@@ -1,4 +1,5 @@
 use crate::{
+    authentication::{authenticate_user, create_token},
     persistence::{self, get_channels},
     types::{Channel, Message, User},
 };
@@ -6,8 +7,16 @@ use actix_web::{delete, get, post, web, HttpResponse, Responder};
 use sqlx::PgPool;
 
 /// catch-all endpoint
-#[get("/")]
-async fn index() -> impl Responder {
+#[get("/authenticate-user")]
+async fn index(user: web::Json<User>) -> impl Responder {
+    let x = authenticate_user(&user);
+
+    HttpResponse::Ok().json(user)
+}
+
+/// health check
+#[get("/health-check")]
+async fn health_check() -> impl Responder {
     HttpResponse::Ok()
 }
 
@@ -21,7 +30,7 @@ async fn channels(pool: web::Data<PgPool>) -> impl Responder {
 }
 
 /// Create a new channel
-#[post("/channels")]
+#[post("/channels/create")]
 async fn create_channel(pool: web::Data<PgPool>, channel: web::Json<Channel>) -> impl Responder {
     match persistence::insert_channel(&pool, &channel).await {
         Ok(_) => HttpResponse::Created(),
@@ -40,16 +49,7 @@ async fn delete_channel(pool: web::Data<PgPool>, path: web::Path<i32>) -> impl R
 }
 
 /// creates the user with the values needed
-#[post("/users")]
-async fn create_user(pool: web::Data<PgPool>, user: web::Json<User>) -> impl Responder {
-    match persistence::create_user(&pool, &user).await {
-        Ok(_) => HttpResponse::Created(),
-        Err(_) => HttpResponse::InternalServerError(),
-    }
-}
-
-/// creates the user with the values needed
-#[post("/messages")]
+#[post("/messages/create")]
 async fn create_message(pool: web::Data<PgPool>, message: web::Json<Message>) -> impl Responder {
     match persistence::create_message(&pool, &message).await {
         Ok(_) => HttpResponse::Created(),
@@ -64,6 +64,25 @@ async fn get_channel_messages(pool: web::Data<PgPool>, path: web::Path<i32>) -> 
 
     match persistence::get_channel_messages(&pool, channel_id).await {
         Ok(result) => HttpResponse::Ok().json(result),
+        Err(error) => HttpResponse::InternalServerError().body(error.to_string()),
+    }
+}
+
+/// creates the user with the values needed
+#[post("/users/create")]
+async fn create_user(pool: web::Data<PgPool>, user: web::Json<User>) -> impl Responder {
+    match persistence::create_user(&pool, &user).await {
+        Ok(result) => HttpResponse::Created().json(result),
+        Err(error) => HttpResponse::InternalServerError().body(error.to_string()),
+    }
+}
+
+#[post("/users/login")]
+async fn user_login(_pool: web::Data<PgPool>, user: web::Json<User>) -> impl Responder {
+    match create_token(&user) {
+        Ok(token) => HttpResponse::Ok()
+            .append_header(("AUTHENTICATION", token))
+            .finish(),
         Err(error) => HttpResponse::InternalServerError().body(error.to_string()),
     }
 }
